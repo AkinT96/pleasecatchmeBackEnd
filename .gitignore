@@ -1,0 +1,51 @@
+# Node.js Abhängigkeiten
+node_modules/
+package-lock.json
+
+# Log-Dateien
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+*.out
+*.pid
+*.seed
+*.gz
+
+# Umgebungsvariablen / Secrets
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Betriebssystem-Dateien
+.DS_Store
+Thumbs.db
+
+# Editor-spezifische Dateien
+.vscode/
+.idea/
+*.iml
+
+# TypeScript Build-Dateien (falls du TS nutzt)
+dist/
+out/
+*.tsbuildinfo
+
+# WebSockets & Caches
+.cache/
+tmp/
+debug.log
+
+# Android Studio spezifische Dateien
+/android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/app/src/main/assets/index.android.bundle
+
+# Git-spezifische Dateien (optional)
+.git/
