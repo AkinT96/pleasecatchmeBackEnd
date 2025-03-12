@@ -1,18 +1,18 @@
-const WebSocket = require('ws');
+const socket = new WebSocket("wss://websocket-server-1000851228879.europe-west1.run.app");
 
-const server = new WebSocket.Server({ port: 8080 });
+socket.onopen = () => {
+    console.log("✅ WebSocket-Verbindung hergestellt!");
+    socket.send("Hallo Server!");
+};
 
-server.on("connection", (ws) => {
-    console.log("✅ Neuer Client verbunden");
+socket.onmessage = (event) => {
+    console.log("📩 Antwort vom Server:", event.data);
+};
 
-    ws.on("message", (message) => {
-        console.log("📩 Nachricht erhalten:", message);
-        ws.send(`Echo: ${message}`);
-    });
+socket.onclose = () => {
+    console.log("❌ Verbindung geschlossen");
+};
 
-    ws.on("close", () => {
-        console.log("❌ Client getrennt");
-    });
-});
-
-console.log("🚀 WebSocket-Server läuft auf ws://localhost:8080");
+socket.onerror = (error) => {
+    console.error("⚠️ Fehler:", error);
+};
