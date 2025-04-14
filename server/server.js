@@ -1,18 +1,34 @@
-const socket = new WebSocket("wss://websocket-server-1000851228879.europe-west1.run.app");
+const WebSocket = require('ws');
+const RoomManager = require('./RoomManager');
 
-socket.onopen = () => {
-    console.log("✅ WebSocket-Verbindung hergestellt!");
-    socket.send("Hallo Server!");
-};
+const wss = new WebSocket.Server({ port: 8080 });
+const roomManager = new RoomManager();
 
-socket.onmessage = (event) => {
-    console.log("📩 Antwort vom Server:", event.data);
-};
+wss.on('connection', (ws) => {
+    console.log('🔌 Client connected');
 
-socket.onclose = () => {
-    console.log("❌ Verbindung geschlossen");
-};
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message.toString());
 
-socket.onerror = (error) => {
-    console.error("⚠️ Fehler:", error);
-};
+            if (data.type === 'join' && data.spawnPosition) {
+                roomManager.assignPlayerToRoom(ws, data.spawnPosition);
+            } else if (data.type === 'pos') {
+                const room = roomManager.findRoomByPlayer(ws);
+                if (room) {
+                    room.handlePosition(ws, data.x, data.y);
+                }
+            } else {
+                console.warn("⚠️ Unbekannter Nachrichtentyp:", data.type);
+            }
+        } catch (err) {
+            console.log("❌ Invalid JSON:", message);
+        }
+    });
+
+    ws.on('close', () => {
+        roomManager.removePlayer(ws);
+    });
+});
+
+console.log('✅ Server running on ws://localhost:8080');
