@@ -40,15 +40,17 @@ class Room {
         }
     }
 
-    handlePosition(ws, x, y) {
+    handlePosition(ws, x, y, dx = 1, dy = 0) {
         const player = this.players.find(p => p.ws === ws);
         if (player) {
-            player.updatePosition(x, y);
+            player.updatePosition(x, y, dx, dy);
             this.broadcastExcept(ws, {
                 type: 'pos',
-                index: player.id, // 🆕 wichtig!
+                index: player.id,
                 x,
-                y
+                y,
+                dx,
+                dy
             });
         }
     }

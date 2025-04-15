@@ -4,6 +4,8 @@ class Player {
         this.id = id;
         this.x = spawnPosition.x;
         this.y = spawnPosition.y;
+        this.dx = 1; // Default Richtung: rechts
+        this.dy = 0;
         this.isTagger = false;
     }
 
@@ -17,9 +19,11 @@ class Player {
         };
     }
 
-    updatePosition(x, y) {
+    updatePosition(x, y, dx, dy) {
         this.x = x;
         this.y = y;
+        this.dx = dx;
+        this.dy = dy;
     }
 
     send(jsonObject) {
