@@ -8,7 +8,8 @@ class RoomManager {
     }
 
     assignPlayerToRoom(ws, spawnPosition) {
-        let room = this.rooms.find(r => !r.isFull());
+        // Nur Räume suchen, die nicht voll UND noch nicht gestartet sind
+        let room = this.rooms.find(r => !r.isFull() && !r.started);
 
         if (!room) {
             room = new Room();
@@ -19,6 +20,7 @@ class RoomManager {
         this.playerToRoom.set(ws, room);
         return room;
     }
+
 
     removePlayer(ws) {
         const room = this.playerToRoom.get(ws);

@@ -15,9 +15,11 @@ class Player {
             spawnPosition: {
                 x: this.x,
                 y: this.y
-            }
+            },
+            isTagger: this.isTagger
         };
     }
+
 
     updatePosition(x, y, dx, dy) {
         this.x = x;
