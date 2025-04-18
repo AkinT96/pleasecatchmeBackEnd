@@ -5,7 +5,6 @@ const wss = new WebSocket.Server({ port: 8080 });
 const roomManager = new RoomManager();
 
 wss.on('connection', (ws) => {
-    console.log('🔌 Client connected');
 
     ws.on('message', (message) => {
         try {
@@ -19,10 +18,8 @@ wss.on('connection', (ws) => {
                     room.handlePosition(ws, data.x, data.y);
                 }
             } else {
-                console.warn("⚠️ Unbekannter Nachrichtentyp:", data.type);
             }
         } catch (err) {
-            console.log("❌ Invalid JSON:", message);
         }
     });
 
@@ -31,4 +28,3 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log('✅ Server running on ws://localhost:8080');

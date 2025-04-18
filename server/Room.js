@@ -40,7 +40,6 @@ class Room {
         const taggerIndex = Math.floor(Math.random() * this.players.length);
         this.players[taggerIndex].isTagger = true;
 
-        console.log(`🏷️ Spieler ${taggerIndex} ist der Fänger im Raum mit ${this.players.length} Spieler(n)`);
 
         const playerData = this.players.map(p => ({
             ...p.getSpawnData(),
@@ -62,7 +61,6 @@ class Room {
     }
 
     endRoundDueToTimeout() {
-        console.log("⏰ Runde vorbei (Timeout)!");
         for (const player of this.players) {
             player.send({ type: "end", reason: "timeout" });
         }
@@ -90,7 +88,6 @@ class Room {
                     if (other !== player && !other.isFrozen && !other.isTagger) {
                         const dist = Math.hypot(player.x - other.x, player.y - other.y);
                         if (dist < 30) {
-                            console.log(`🎯 Spieler ${player.id} hat Spieler ${other.id} infiziert!`);
                             this.infectPlayer(player, other);
                         }
                     }
@@ -108,7 +105,6 @@ class Room {
             });
         }
 
-        console.log(`🏁 Spiel beendet! Spieler ${tagger.id} hat Spieler ${victim.id} gefangen.`);
         this.started = false;
     }
 
@@ -137,7 +133,6 @@ class Room {
         // Opfer darf sich nach 7 Sekunden bewegen
         setTimeout(() => {
             victim.isFrozen = false;
-            console.log(`🧟‍♂️ Spieler ${victim.id} darf sich jetzt bewegen!`);
         }, 7000);
     }
 

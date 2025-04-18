@@ -34,7 +34,6 @@ class Player {
                 this.ws.send(JSON.stringify(jsonObject));
             }
         } catch (e) {
-            console.warn(`❌ Fehler beim Senden an Spieler ${this.id}:`, e);
         }
     }
 }
