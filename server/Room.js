@@ -119,7 +119,6 @@ class Room {
     infectPlayer(tagger, victim) {
         if (tagger === victim || !tagger.isTagger || victim.isFrozen) return;
 
-        // Infektion blockieren für 1 Sekunde
         tagger.isTagger = false;
         victim.isTagger = true;
         victim.isFrozen = true;
@@ -130,9 +129,21 @@ class Room {
             oldTagger: tagger.id
         });
 
-        // Opfer darf sich nach 7 Sekunden bewegen
+        // ✅ NEU: Alle über den Freeze-Zustand des Opfers informieren
+        this.broadcast({
+            type: "frozen",
+            playerId: victim.id,
+            value: true
+        });
+
+        // ✅ Nach 7 Sekunden: Entfrieren + Broadcast
         setTimeout(() => {
             victim.isFrozen = false;
+            this.broadcast({
+                type: "frozen",
+                playerId: victim.id,
+                value: false
+            });
         }, 7000);
     }
 
