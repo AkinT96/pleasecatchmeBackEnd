@@ -5,7 +5,7 @@ class Room {
         this.players = [];
         this.started = false;
         this.roundTimer = null;
-        this.roundDuration = 2 * 60 * 1000; // 2 Minuten in Millisekunden
+        this.roundDuration = 2 * 60 * 100; // 2 Minuten in Millisekunden
 
     }
 
@@ -14,6 +14,9 @@ class Room {
     }
 
     addPlayer(ws, spawnPosition) {
+        // Verhindere Doppelbelegung
+        if (this.players.find(p => p.ws === ws)) return;
+
         const player = new Player(ws, this.players.length, spawnPosition);
         this.players.push(player);
 
@@ -22,6 +25,7 @@ class Room {
             playerIndex: player.id
         });
 
+        // ✅ Spiel nur starten, wenn wirklich 2 Spieler da sind
         if (this.isFull() && !this.started) {
             this.startGame();
         }
@@ -55,18 +59,31 @@ class Room {
     }
 
     startRoundTimer() {
+        const startTime = Date.now();
         this.roundTimer = setTimeout(() => {
             this.endRoundDueToTimeout();
         }, this.roundDuration);
+
+        // ⏱️ Alle 1 Sekunde: verbleibende Zeit senden
+        this.timeInterval = setInterval(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const remaining = Math.max(0, (this.roundDuration / 1000) - elapsed);
+            this.broadcast({
+                type: "time",
+                remaining: remaining
+            });
+        }, 1000);
     }
 
+
     endRoundDueToTimeout() {
+        clearInterval(this.timeInterval); // <--- NEU
         for (const player of this.players) {
             player.send({ type: "end", reason: "timeout" });
         }
         this.started = false;
-        clearTimeout(this.roundTimer);
     }
+
 
 
     handlePosition(ws, x, y, dx = 1, dy = 0) {
@@ -150,7 +167,7 @@ class Room {
     broadcastExcept(senderWs, jsonObject) {
         for (const player of this.players) {
             if (player.ws !== senderWs && player.ws.readyState === player.ws.OPEN) {
-                player.send(jsonObject); // ✅ nicht selbst serialisieren
+                player.send(jsonObject); // ✅// nicht selbst serialisieren
             }
         }
     }
