@@ -36,10 +36,9 @@ class RoomManager {
         return this.playerToRoom.get(ws);
     }
 
-    // Statt Spieler zu löschen, nur die Zuweisung aufheben
     clearRoomAssignments(room) {
         for (const player of room.players) {
-            this.playerToRoom.delete(player.ws); // Spieler freigeben für neue Zuweisung
+            this.playerToRoom.delete(player.ws);
         }
     }
 }
