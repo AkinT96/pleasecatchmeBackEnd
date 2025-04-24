@@ -8,7 +8,7 @@ class Room {
         this.started = false;
         this.roundTimer = null;
         this.timeInterval = null;
-        this.roundDuration = 2 * 60 * 1000;
+        this.roundDuration = 2 * 60 * 200;
         this.pingInterval = null;
         this.lastPing = new Map();
     }
