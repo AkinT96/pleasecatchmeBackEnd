@@ -7,10 +7,10 @@ class Room {
         this.started = false;
         this.roundTimer = null;
         this.timeInterval = null;
-        this.roundDuration = 2 * 60 * 1000; // 2 Minuten korrekt (waren vorher 2*60*200)
+        this.roundDuration = 2 * 60 * 1000;
         this.pingInterval = null;
         this.lastPing = new Map();
-        this.items = []; // 🔥 NEU: Liste der Items
+        this.items = [];
     }
 
     isFull() {
@@ -121,7 +121,7 @@ class Room {
 
         this.roomManager.clearRoomAssignments(this);
         this.players = [];
-        this.items = []; // 🔥 Items beim Rundenende leeren
+        this.items = [];
         this.lastPing.clear();
     }
 
@@ -175,7 +175,6 @@ class Room {
         }, 7000);
     }
 
-    // 🔥🔥 NEU: Item spawnen lassen
     handleItemSpawn(ws, x, y) {
         const newItem = { x, y };
         this.items.push(newItem);
@@ -183,7 +182,6 @@ class Room {
         console.log(`🎁 Item gespawnt bei ${x}, ${y}`);
     }
 
-    // 🔥🔥 NEU: Item aufheben
     handleItemPickup(ws, x, y) {
         const player = this.players.find(p => p.ws === ws);
         if (!player) return;
@@ -197,12 +195,45 @@ class Room {
             type: "pickupItem",
             x,
             y,
-            playerId: player.id  // ✅ Jetzt wird die Spieler-ID mitgesendet
+            playerId: player.id
         });
         console.log(`🛒 Spieler ${player.id} hat ein Item bei (${x}, ${y}) aufgenommen`);
     }
 
+    handleFreezeOther(ws) {
+        const player = this.players.find(p => p.ws === ws);
+        const other = this.players.find(p => p.ws !== ws);
 
+        if (other) {
+            other.ws.send(JSON.stringify({
+                type: 'frozen',
+                playerId: other.id,
+                value: true
+            }));
+
+            setTimeout(() => {
+                if (other.ws.readyState === 1) {
+                    other.ws.send(JSON.stringify({
+                        type: 'frozen',
+                        playerId: other.id,
+                        value: false
+                    }));
+                }
+            }, 4000);
+        }
+    }
+
+    // ✨ NEU: Unsichtbarkeit korrekt verteilen
+    handleSetInvisible(ws, value) {
+        const player = this.players.find(p => p.ws === ws);
+        if (!player) return;
+
+        this.broadcast({
+            type: 'setInvisible',
+            playerId: player.id,
+            value: value
+        });
+    }
 }
 
 module.exports = Room;
