@@ -185,15 +185,24 @@ class Room {
 
     // 🔥🔥 NEU: Item aufheben
     handleItemPickup(ws, x, y) {
-        // Item in der Nähe löschen
+        const player = this.players.find(p => p.ws === ws);
+        if (!player) return;
+
         this.items = this.items.filter(item => {
             const dist = Math.hypot(item.x - x, item.y - y);
             return dist > 20;
         });
 
-        this.broadcast({ type: "pickupItem", x, y });
-        console.log(`🛒 Item aufgehoben bei ${x}, ${y}`);
+        this.broadcast({
+            type: "pickupItem",
+            x,
+            y,
+            playerId: player.id  // ✅ Jetzt wird die Spieler-ID mitgesendet
+        });
+        console.log(`🛒 Spieler ${player.id} hat ein Item bei (${x}, ${y}) aufgenommen`);
     }
+
+
 }
 
 module.exports = Room;
