@@ -1,4 +1,3 @@
-// ✅ Room.js
 const Player = require('./Player');
 
 class Room {
@@ -8,9 +7,10 @@ class Room {
         this.started = false;
         this.roundTimer = null;
         this.timeInterval = null;
-        this.roundDuration = 2 * 60 * 200;
+        this.roundDuration = 2 * 60 * 1000; // 2 Minuten korrekt (waren vorher 2*60*200)
         this.pingInterval = null;
         this.lastPing = new Map();
+        this.items = []; // 🔥 NEU: Liste der Items
     }
 
     isFull() {
@@ -44,7 +44,7 @@ class Room {
             const now = Date.now();
             for (const player of this.players) {
                 const last = this.lastPing.get(player.ws) || 0;
-                if (now - last > 10000) { // 10 Sekunden Timeout
+                if (now - last > 10000) {
                     console.log("❌ Spieler wegen fehlendem Ping entfernt");
                     this.removePlayer(player.ws);
                     this.roomManager.removePlayer(player.ws);
@@ -104,16 +104,12 @@ class Room {
     }
 
     endRoundDueToTimeout() {
-        for (const player of this.players) {
-            player.send({ type: "end", reason: "timeout" });
-        }
+        this.broadcast({ type: "end", reason: "timeout" });
         this.cleanupRoom();
     }
 
     endGame(tagger, victim) {
-        for (const player of this.players) {
-            player.send({ type: 'end', tagger: tagger.id, victim: victim.id });
-        }
+        this.broadcast({ type: 'end', tagger: tagger.id, victim: victim.id });
         this.cleanupRoom();
     }
 
@@ -125,6 +121,7 @@ class Room {
 
         this.roomManager.clearRoomAssignments(this);
         this.players = [];
+        this.items = []; // 🔥 Items beim Rundenende leeren
         this.lastPing.clear();
     }
 
@@ -176,6 +173,26 @@ class Room {
             victim.isFrozen = false;
             this.broadcast({ type: "frozen", playerId: victim.id, value: false });
         }, 7000);
+    }
+
+    // 🔥🔥 NEU: Item spawnen lassen
+    handleItemSpawn(ws, x, y) {
+        const newItem = { x, y };
+        this.items.push(newItem);
+        this.broadcast({ type: "spawnItem", x, y });
+        console.log(`🎁 Item gespawnt bei ${x}, ${y}`);
+    }
+
+    // 🔥🔥 NEU: Item aufheben
+    handleItemPickup(ws, x, y) {
+        // Item in der Nähe löschen
+        this.items = this.items.filter(item => {
+            const dist = Math.hypot(item.x - x, item.y - y);
+            return dist > 20;
+        });
+
+        this.broadcast({ type: "pickupItem", x, y });
+        console.log(`🛒 Item aufgehoben bei ${x}, ${y}`);
     }
 }
 
