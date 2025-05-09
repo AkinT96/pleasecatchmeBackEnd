@@ -63,15 +63,18 @@ class Room {
         this.players = this.players.filter(p => p.ws !== ws);
         this.lastPing.delete(ws);
 
-        // Nur beenden, wenn noch Spieler im Raum sind
         if (this.players.length === 0) {
-            this.cleanupRoom();
+            this.cleanupRoom(); // Raum komplett freigeben
         } else {
             this.locked = true;
             this.broadcast({ type: "end", reason: "disconnect" });
-        }
 
+            // ❗ Cleanup NICHT sofort durchführen!
+            // Lass dem anderen Spieler 3–5 Sekunden Zeit für seinen Endscreen
+            setTimeout(() => this.cleanupRoom(), 5000);
+        }
     }
+
 
 
 
