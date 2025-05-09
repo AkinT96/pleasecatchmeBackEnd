@@ -31,6 +31,12 @@ wss.on('connection', (ws) => {
                     case 'setInvisible':
                         room.handleSetInvisible(ws, data.value);
                         break;
+                    case 'ping':
+                        if (room) {
+                            room.updatePing(ws);
+                        }
+                        break;
+
                     case 'leave':
                         ws.close(); // Verbindung wird ohnehin beendet
                         break;
@@ -47,13 +53,5 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
         roomManager.removePlayer(ws);
         console.log('🔌 Spieler getrennt');
-    });
-
-    // NEU: Pong-Handler für Ping-Timeout
-    ws.on('pong', () => {
-        const room = roomManager.findRoomByPlayer(ws);
-        if (room) {
-            room.updatePing(ws);
-        }
     });
 });
