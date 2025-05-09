@@ -26,8 +26,6 @@ class Room {
 
         player.send({ type: 'joined', playerIndex: player.id });
 
-        this.setupPing(ws);
-
         if (this.isFull() && !this.started) {
             this.startGame();
         }
