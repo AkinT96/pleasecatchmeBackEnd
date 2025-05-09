@@ -23,7 +23,10 @@ class Room {
 
         const player = new Player(ws, this.players.length, spawnPosition);
         this.players.push(player);
-        this.lastPing.set(ws, Date.now());
+        if (!this.lastPing.has(ws)) {
+            // Erstkontakt: großzügig Zeit geben
+            this.lastPing.set(ws, Date.now());
+        }
 
         player.send({ type: 'joined', playerIndex: player.id });
 
@@ -76,7 +79,7 @@ class Room {
         this.started = true;
         this.locked = true; // 🆕 Raum sperren nach Start
         this.startRoundTimer();
-        this.monitorPings();
+        setTimeout(() => this.monitorPings(), 5000);
 
         const taggerIndex = Math.floor(Math.random() * this.players.length);
         this.players[taggerIndex].isTagger = true;
