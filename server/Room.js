@@ -53,12 +53,20 @@ class Room {
 
 
     removePlayer(ws) {
+        console.log("🚫 Spieler wurde entfernt");
         this.players = this.players.filter(p => p.ws !== ws);
         this.lastPing.delete(ws);
 
-        this.broadcast({ type: "end", reason: "disconnect" });
-        this.cleanupRoom();
+        // Nur beenden, wenn noch Spieler im Raum sind
+        if (this.players.length === 0) {
+            this.cleanupRoom();
+        } else {
+            this.broadcast({ type: "end", reason: "disconnect" });
+            this.cleanupRoom(); // <- ❌ das ist zu früh!
+        }
     }
+
+
 
     startGame() {
         this.started = true;
@@ -93,9 +101,11 @@ class Room {
     }
 
     endRoundDueToTimeout() {
+        console.log("⏰ Runde endet wegen Zeitablauf");
         this.broadcast({ type: "end", reason: "timeout" });
         this.cleanupRoom();
     }
+
 
     endGame(tagger, victim) {
         this.broadcast({ type: 'end', tagger: tagger.id, victim: victim.id });
