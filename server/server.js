@@ -11,6 +11,9 @@ wss.on('connection', (ws) => {
         try {
             const data = JSON.parse(message.toString());
             const room = roomManager.findRoomByPlayer(ws);
+            if (!room && data.type !== 'join') {
+                console.warn('⚠️ Kein Raum für diesen Spieler gefunden');
+            }
 
             if (data.type === 'join' && data.spawnPosition) {
                 roomManager.assignPlayerToRoom(ws, data.spawnPosition);
@@ -32,10 +35,12 @@ wss.on('connection', (ws) => {
                         room.handleSetInvisible(ws, data.value);
                         break;
                     case 'ping':
+                        console.log('📶 Ping erhalten von Client');
                         if (room) {
                             room.updatePing(ws);
                         }
                         break;
+
 
                     case 'leave':
                         ws.close(); // Verbindung wird ohnehin beendet

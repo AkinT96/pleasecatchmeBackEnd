@@ -33,7 +33,9 @@ class Room {
 
     updatePing(ws) {
         this.lastPing.set(ws, Date.now());
+        console.log('✅ Ping aktualisiert für Spieler');
     }
+
 
 
     monitorPings() {
