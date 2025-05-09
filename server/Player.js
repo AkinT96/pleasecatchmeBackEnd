@@ -4,7 +4,7 @@ class Player {
         this.id = id;
         this.x = spawnPosition.x;
         this.y = spawnPosition.y;
-        this.dx = 1; // Default Richtung: rechts
+        this.dx = 1;
         this.dy = 0;
         this.isTagger = false;
     }
@@ -12,14 +12,10 @@ class Player {
     getSpawnData() {
         return {
             index: this.id,
-            spawnPosition: {
-                x: this.x,
-                y: this.y
-            },
+            spawnPosition: { x: this.x, y: this.y },
             isTagger: this.isTagger
         };
     }
-
 
     updatePosition(x, y, dx, dy) {
         this.x = x;
@@ -33,8 +29,7 @@ class Player {
             if (this.ws.readyState === this.ws.OPEN) {
                 this.ws.send(JSON.stringify(jsonObject));
             }
-        } catch (e) {
-        }
+        } catch (e) {}
     }
 }
 

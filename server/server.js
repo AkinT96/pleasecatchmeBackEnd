@@ -14,7 +14,6 @@ wss.on('connection', (ws) => {
 
             if (data.type === 'join' && data.spawnPosition) {
                 roomManager.assignPlayerToRoom(ws, data.spawnPosition);
-                console.log('👤 Spieler beigetreten mit Spawn:', data.spawnPosition);
             } else if (room) {
                 switch (data.type) {
                     case 'pos':

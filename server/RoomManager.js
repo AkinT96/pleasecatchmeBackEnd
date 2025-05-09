@@ -1,4 +1,3 @@
-// ✅ RoomManager.js
 const Room = require('./Room');
 
 class RoomManager {
@@ -8,7 +7,9 @@ class RoomManager {
     }
 
     assignPlayerToRoom(ws, spawnPosition) {
-        let room = this.rooms.find(r => !r.isFull() && !r.started);
+        let room = this.rooms.find(r =>
+            !r.started && !r.isFull() && r.players.length > 0
+        );
 
         if (!room) {
             room = new Room(this);
@@ -25,10 +26,6 @@ class RoomManager {
         if (room) {
             room.removePlayer(ws);
             this.playerToRoom.delete(ws);
-
-            if (room.players.length === 0) {
-                this.rooms = this.rooms.filter(r => r !== room);
-            }
         }
     }
 

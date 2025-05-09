@@ -1,5 +1,3 @@
-const Player = require('./Player');
-
 class Room {
     constructor(roomManager) {
         this.roomManager = roomManager;
@@ -44,7 +42,7 @@ class Room {
             const now = Date.now();
             for (const player of this.players) {
                 const last = this.lastPing.get(player.ws) || 0;
-                if (now - last > 5000) {
+                if (now - last > 10000) {
                     console.log("❌ Spieler wegen fehlendem Ping entfernt");
                     this.removePlayer(player.ws);
                     this.roomManager.removePlayer(player.ws);
@@ -63,11 +61,9 @@ class Room {
         this.players = this.players.filter(p => p.ws !== ws);
         this.lastPing.delete(ws);
 
-        // Spiel in jedem Fall beenden, auch vor dem Start
         this.broadcast({ type: "end", reason: "disconnect" });
         this.cleanupRoom();
     }
-
 
     startGame() {
         this.started = true;
@@ -118,6 +114,7 @@ class Room {
         this.started = false;
 
         this.roomManager.clearRoomAssignments(this);
+        this.roomManager.rooms = this.roomManager.rooms.filter(r => r !== this);
         this.players = [];
         this.items = [];
         this.lastPing.clear();
@@ -177,60 +174,33 @@ class Room {
         const newItem = { x, y };
         this.items.push(newItem);
         this.broadcast({ type: "spawnItem", x, y });
-        console.log(`🎁 Item gespawnt bei ${x}, ${y}`);
     }
 
     handleItemPickup(ws, x, y) {
         const player = this.players.find(p => p.ws === ws);
         if (!player) return;
 
-        this.items = this.items.filter(item => {
-            const dist = Math.hypot(item.x - x, item.y - y);
-            return dist > 20;
-        });
-
-        this.broadcast({
-            type: "pickupItem",
-            x,
-            y,
-            playerId: player.id
-        });
-        console.log(`🛒 Spieler ${player.id} hat ein Item bei (${x}, ${y}) aufgenommen`);
+        this.items = this.items.filter(item => Math.hypot(item.x - x, item.y - y) > 20);
+        this.broadcast({ type: "pickupItem", x, y, playerId: player.id });
     }
 
     handleFreezeOther(ws) {
-        const player = this.players.find(p => p.ws === ws);
         const other = this.players.find(p => p.ws !== ws);
-
         if (other) {
-            other.ws.send(JSON.stringify({
-                type: 'frozen',
-                playerId: other.id,
-                value: true
-            }));
-
+            other.send({ type: 'frozen', playerId: other.id, value: true });
             setTimeout(() => {
                 if (other.ws.readyState === 1) {
-                    other.ws.send(JSON.stringify({
-                        type: 'frozen',
-                        playerId: other.id,
-                        value: false
-                    }));
+                    other.send({ type: 'frozen', playerId: other.id, value: false });
                 }
             }, 4000);
         }
     }
 
-    // ✨ NEU: Unsichtbarkeit korrekt verteilen
     handleSetInvisible(ws, value) {
         const player = this.players.find(p => p.ws === ws);
         if (!player) return;
 
-        this.broadcast({
-            type: 'setInvisible',
-            playerId: player.id,
-            value: value
-        });
+        this.broadcast({ type: 'setInvisible', playerId: player.id, value });
     }
 }
 
