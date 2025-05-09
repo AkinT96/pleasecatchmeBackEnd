@@ -63,13 +63,11 @@ class Room {
         this.players = this.players.filter(p => p.ws !== ws);
         this.lastPing.delete(ws);
 
-        if (!this.started) return;
-
-        if (this.players.length < 2) {
-            this.broadcast({ type: "end", reason: "disconnect" });
-            this.cleanupRoom();
-        }
+        // Spiel in jedem Fall beenden, auch vor dem Start
+        this.broadcast({ type: "end", reason: "disconnect" });
+        this.cleanupRoom();
     }
+
 
     startGame() {
         this.started = true;
