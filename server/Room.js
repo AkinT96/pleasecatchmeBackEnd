@@ -8,7 +8,7 @@ class Room {
         this.locked = false;
         this.roundTimer = null;
         this.timeInterval = null;
-        this.roundDuration = 0.1 * 60 * 1000;
+        this.roundDuration = 0.2 * 60 * 1000;
         this.pingInterval = null;
         this.lastPing = new Map();
         this.items = [];
