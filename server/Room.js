@@ -33,20 +33,23 @@ class Room {
         }
     }
 
-    setupPing(ws) {
-        ws.on('pong', () => {
-            this.lastPing.set(ws, Date.now());
-        });
+    updatePing(ws) {
+        this.lastPing.set(ws, Date.now());
     }
+
 
     monitorPings() {
         this.pingInterval = setInterval(() => {
             const now = Date.now();
-            for (const player of this.players) {
+            for (const player of [...this.players]) {
                 const last = this.lastPing.get(player.ws) || 0;
-                if (now - last > 10000) {
-                    console.log("❌ Spieler wegen fehlendem Ping entfernt");
-                    this.removePlayer(player.ws);
+                if (now - last > 5000) {
+                    console.log("❌ Spieler wegen Inaktivität entfernt");
+
+                    // Gegner informieren
+                    this.broadcastExcept(player.ws, { type: "opponentLeft" });
+
+                    this.removePlayer(player.ws); // schließt den WS & räumt auf
                     this.roomManager.removePlayer(player.ws);
                 } else {
                     try {
@@ -56,8 +59,9 @@ class Room {
                     }
                 }
             }
-        }, 5000);
+        }, 3000); // alle 3 Sekunden prüfen
     }
+
 
     removePlayer(ws) {
         this.players = this.players.filter(p => p.ws !== ws);

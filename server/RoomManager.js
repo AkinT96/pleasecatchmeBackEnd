@@ -11,16 +11,22 @@ class RoomManager {
             !r.started && !r.isFull()
         );
 
-
         if (!room) {
             room = new Room(this);
             this.rooms.push(room);
+        }
+
+        if (room.started) {
+            ws.send(JSON.stringify({ type: "roomFull" }));
+            ws.close();
+            return;
         }
 
         room.addPlayer(ws, spawnPosition);
         this.playerToRoom.set(ws, room);
         return room;
     }
+
 
     removePlayer(ws) {
         const room = this.playerToRoom.get(ws);
