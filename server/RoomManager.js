@@ -8,8 +8,9 @@ class RoomManager {
 
     assignPlayerToRoom(ws, spawnPosition) {
         let room = this.rooms.find(r =>
-            !r.started && !r.isFull() && r.players.length > 0
+            !r.started && !r.isFull()
         );
+
 
         if (!room) {
             room = new Room(this);
