@@ -44,7 +44,7 @@ class Room {
             const now = Date.now();
             for (const player of this.players) {
                 const last = this.lastPing.get(player.ws) || 0;
-                if (now - last > 10000) {
+                if (now - last > 5000) {
                     console.log("❌ Spieler wegen fehlendem Ping entfernt");
                     this.removePlayer(player.ws);
                     this.roomManager.removePlayer(player.ws);
