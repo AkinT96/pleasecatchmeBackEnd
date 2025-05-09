@@ -8,7 +8,7 @@ class RoomManager {
 
     assignPlayerToRoom(ws, spawnPosition) {
         let room = this.rooms.find(r =>
-            !r.started && !r.isFull()
+            !r.started && !r.locked && !r.isFull() // 🆕 Nur offene Räume
         );
 
         if (!room) {
@@ -16,8 +16,8 @@ class RoomManager {
             this.rooms.push(room);
         }
 
-        if (room.started) {
-            ws.send(JSON.stringify({ type: "roomFull" }));
+        if (room.locked || room.started) { // 🆕 Sicherheitscheck
+            ws.send(JSON.stringify({type: "roomFull"}));
             ws.close();
             return;
         }
