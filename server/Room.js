@@ -66,25 +66,6 @@ class Room {
         }, 3000);
     }
 
-
-    removePlayer(ws) {
-        console.log("🚫 Spieler wurde entfernt");
-        this.players = this.players.filter(p => p.ws !== ws);
-        this.lastPing.delete(ws);
-
-        if (this.players.length === 0) {
-            this.cleanupRoom(); // Raum komplett freigeben
-        } else {
-            this.locked = true;
-            this.broadcast({type: "end", reason: "disconnect"});
-
-            // ❗ Cleanup NICHT sofort durchführen!
-            // Lass dem anderen Spieler 3–5 Sekunden Zeit für seinen Endscreen
-            setTimeout(() => this.cleanupRoom(), 5000);
-        }
-    }
-
-
     startGame() {
         this.started = true;
         this.locked = true; // 🆕 Raum sperren nach Start
@@ -134,12 +115,15 @@ class Room {
             this.cleanupRoom();
         } else {
             this.locked = true;
-            this.ended = true;
-            this.broadcast({type: "end", reason: "disconnect"});
+            this.broadcast({ type: "opponentLeft" });
 
-            setTimeout(() => this.cleanupRoom(), 5000);
+            // Warte 6 Sekunden, bevor Raum wirklich gelöscht wird
+            setTimeout(() => {
+                this.cleanupRoom();
+            }, 6000);
         }
     }
+
 
 
     endGame(tagger, victim) {
