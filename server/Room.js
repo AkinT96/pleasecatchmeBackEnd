@@ -1,3 +1,5 @@
+const Player = require('./Player');
+
 class Room {
     constructor(roomManager) {
         this.roomManager = roomManager;
