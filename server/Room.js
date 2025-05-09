@@ -5,6 +5,7 @@ class Room {
         this.roomManager = roomManager;
         this.players = [];
         this.started = false;
+        this.locked = false;
         this.roundTimer = null;
         this.timeInterval = null;
         this.roundDuration = 2 * 60 * 1000;
@@ -18,7 +19,7 @@ class Room {
     }
 
     addPlayer(ws, spawnPosition) {
-        if (this.players.find(p => p.ws === ws)) return;
+        if (this.locked || this.players.find(p => p.ws === ws)) return;
 
         const player = new Player(ws, this.players.length, spawnPosition);
         this.players.push(player);
@@ -63,6 +64,7 @@ class Room {
         if (this.players.length === 0) {
             this.cleanupRoom();
         } else {
+            this.locked = true; // 🆕 Raum sperren bei Disconnect
             this.broadcast({ type: "end", reason: "disconnect" });
             this.cleanupRoom(); // <- ❌ das ist zu früh!
         }
@@ -72,6 +74,7 @@ class Room {
 
     startGame() {
         this.started = true;
+        this.locked = true; // 🆕 Raum sperren nach Start
         this.startRoundTimer();
         this.monitorPings();
 
