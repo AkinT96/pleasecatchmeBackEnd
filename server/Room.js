@@ -43,21 +43,12 @@ class Room {
                 const last = this.lastPing.get(player.ws) || 0;
                 if (now - last > 5000) {
                     console.log("❌ Spieler wegen Inaktivität entfernt");
-
-                    // Gegner informieren
                     this.broadcastExcept(player.ws, { type: "opponentLeft" });
-
-                    this.removePlayer(player.ws); // schließt den WS & räumt auf
+                    this.removePlayer(player.ws);
                     this.roomManager.removePlayer(player.ws);
-                } else {
-                    try {
-                        player.ws.ping();
-                    } catch (err) {
-                        console.error("Ping fehlgeschlagen", err);
-                    }
                 }
             }
-        }, 3000); // alle 3 Sekunden prüfen
+        }, 3000);
     }
 
 
