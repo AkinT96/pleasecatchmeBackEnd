@@ -25,7 +25,7 @@ class Room {
         this.players.push(player);
         if (!this.lastPing.has(ws)) {
             // Erstkontakt: großzügig Zeit geben
-            this.lastPing.set(ws, Date.now());
+            this.lastPing.set(ws, Date.now() + 10000); // 10 Sekunden Gnadenzeit nach Verbindungsaufbau
         }
 
         player.send({ type: 'joined', playerIndex: player.id });
@@ -67,10 +67,10 @@ class Room {
         if (this.players.length === 0) {
             this.cleanupRoom();
         } else {
-            this.locked = true; // 🆕 Raum sperren bei Disconnect
+            this.locked = true;
             this.broadcast({ type: "end", reason: "disconnect" });
-            this.cleanupRoom(); // <- ❌ das ist zu früh!
         }
+
     }
 
 
