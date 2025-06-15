@@ -9,6 +9,7 @@ class Room {
         this.timeInterval = null;
         this.roundDuration = 2 * 60 * 1000;
         this.pingInterval = null;
+        this.itemInterval = null; // 🆕 NEU: Intervall-Referenz speichern
         this.lastPing = new Map();
         this.items = [];
     }
@@ -87,6 +88,20 @@ class Room {
         for (const player of this.players) {
             player.send({ type: 'start', players: playerData });
         }
+
+        // 🆕 Direkt ein erstes Item zur Kontrolle erzeugen
+        this.handleItemSpawn(null, 256, 256);
+
+        // 🆕 Alle 10 Sekunden ein neues Item spawnen (max. 5 gleichzeitig)
+        this.itemInterval = setInterval(() => {
+            if (!this.started) return;
+            if (this.items.length >= 5) return;
+
+            const x = Math.floor(Math.random() * 500) + 100;
+            const y = Math.floor(Math.random() * 400) + 100;
+
+            this.handleItemSpawn(null, x, y);
+        }, 10000);
     }
 
     startRoundTimer() {
@@ -117,8 +132,9 @@ class Room {
         clearTimeout(this.roundTimer);
         clearInterval(this.timeInterval);
         clearInterval(this.pingInterval);
-        this.started = false;
+        clearInterval(this.itemInterval); // 🆕 Intervall stoppen
 
+        this.started = false;
         this.roomManager.clearRoomAssignments(this);
         this.players = [];
         this.items = [];
