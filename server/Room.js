@@ -5,6 +5,7 @@ class Room {
         this.roomManager = roomManager;
         this.players = [];
         this.started = false;
+        this.locked = false;
         this.roundTimer = null;
         this.timeInterval = null;
         this.roundDuration = 2 * 60 * 1000;
@@ -12,6 +13,8 @@ class Room {
         this.itemInterval = null; // 🆕 NEU: Intervall-Referenz speichern
         this.lastPing = new Map();
         this.items = [];
+        this.ended = false;
+
     }
 
     isFull() {
@@ -19,63 +22,56 @@ class Room {
     }
 
     addPlayer(ws, spawnPosition) {
-        if (this.players.find(p => p.ws === ws)) return;
+        if (this.locked || this.players.find(p => p.ws === ws)) return;
 
         const player = new Player(ws, this.players.length, spawnPosition);
         this.players.push(player);
-        this.lastPing.set(ws, Date.now());
+        if (!this.lastPing.has(ws)) {
+            // Erstkontakt: großzügig Zeit geben
+            this.lastPing.set(ws, Date.now() + 10000); // 10 Sekunden Gnadenzeit nach Verbindungsaufbau
+        }
 
-        player.send({ type: 'joined', playerIndex: player.id });
-
-        this.setupPing(ws);
+        player.send({type: 'joined', playerIndex: player.id});
 
         if (this.isFull() && !this.started) {
             this.startGame();
         }
     }
 
-    setupPing(ws) {
-        ws.on('pong', () => {
-            this.lastPing.set(ws, Date.now());
-        });
+    updatePing(ws) {
+        this.lastPing.set(ws, Date.now());
+        console.log('✅ Ping aktualisiert für Spieler');
+
+        if (this.ended) {
+            const player = this.players.find(p => p.ws === ws);
+            if (player) {
+                console.log("📤 Sende verspätetes Endsignal an wieder aktiven Client");
+                player.send({ type: "end", reason: "disconnect" });
+            }
+        }
     }
+
 
     monitorPings() {
         this.pingInterval = setInterval(() => {
             const now = Date.now();
-            for (const player of this.players) {
+            for (const player of [...this.players]) {
                 const last = this.lastPing.get(player.ws) || 0;
-                if (now - last > 10000) {
-                    console.log("❌ Spieler wegen fehlendem Ping entfernt");
+                if (now - last > 5000) {
+                    console.log("❌ Spieler wegen Inaktivität entfernt");
+                    this.broadcastExcept(player.ws, {type: "opponentLeft"});
                     this.removePlayer(player.ws);
                     this.roomManager.removePlayer(player.ws);
-                } else {
-                    try {
-                        player.ws.ping();
-                    } catch (err) {
-                        console.error("Ping fehlgeschlagen", err);
-                    }
                 }
             }
-        }, 5000);
-    }
-
-    removePlayer(ws) {
-        this.players = this.players.filter(p => p.ws !== ws);
-        this.lastPing.delete(ws);
-
-        if (!this.started) return;
-
-        if (this.players.length < 2) {
-            this.broadcast({ type: "end", reason: "disconnect" });
-            this.cleanupRoom();
-        }
+        }, 3000);
     }
 
     startGame() {
         this.started = true;
+        this.locked = true; // 🆕 Raum sperren nach Start
         this.startRoundTimer();
-        this.monitorPings();
+        setTimeout(() => this.monitorPings(), 5000);
 
         const taggerIndex = Math.floor(Math.random() * this.players.length);
         this.players[taggerIndex].isTagger = true;
@@ -86,7 +82,7 @@ class Room {
         }));
 
         for (const player of this.players) {
-            player.send({ type: 'start', players: playerData });
+            player.send({type: 'start', players: playerData});
         }
 
         // 🆕 Direkt ein erstes Item zur Kontrolle erzeugen
@@ -114,17 +110,39 @@ class Room {
         this.timeInterval = setInterval(() => {
             const elapsed = (Date.now() - startTime) / 1000;
             const remaining = Math.max(0, (this.roundDuration / 1000) - elapsed);
-            this.broadcast({ type: "time", remaining });
+            this.broadcast({type: "time", remaining});
         }, 1000);
     }
 
     endRoundDueToTimeout() {
-        this.broadcast({ type: "end", reason: "timeout" });
+        console.log("⏰ Runde endet wegen Zeitablauf");
+        this.ended = true;
+        this.broadcast({type: "end", reason: "timeout"});
         this.cleanupRoom();
     }
 
+    removePlayer(ws) {
+        console.log("🚫 Spieler wurde entfernt");
+        this.players = this.players.filter(p => p.ws !== ws);
+        this.lastPing.delete(ws);
+
+        if (this.players.length === 0) {
+            this.cleanupRoom();
+        } else {
+            this.locked = true;
+            this.broadcast({ type: "opponentLeft" });
+
+            // Warte 6 Sekunden, bevor Raum wirklich gelöscht wird
+            setTimeout(() => {
+                this.cleanupRoom();
+            }, 6000);
+        }
+    }
+
+
+
     endGame(tagger, victim) {
-        this.broadcast({ type: 'end', tagger: tagger.id, victim: victim.id });
+        this.broadcast({type: 'end', tagger: tagger.id, victim: victim.id});
         this.cleanupRoom();
     }
 
@@ -136,6 +154,7 @@ class Room {
 
         this.started = false;
         this.roomManager.clearRoomAssignments(this);
+        this.roomManager.rooms = this.roomManager.rooms.filter(r => r !== this);
         this.players = [];
         this.items = [];
         this.lastPing.clear();
@@ -160,7 +179,7 @@ class Room {
         if (player) {
             this.lastPing.set(ws, Date.now());
             player.updatePosition(x, y, dx, dy);
-            this.broadcastExcept(ws, { type: 'pos', index: player.id, x, y, dx, dy });
+            this.broadcastExcept(ws, {type: 'pos', index: player.id, x, y, dx, dy});
 
             if (player.isTagger && !player.isFrozen) {
                 for (const other of this.players) {
@@ -182,73 +201,46 @@ class Room {
         victim.isTagger = true;
         victim.isFrozen = true;
 
-        this.broadcast({ type: "infected", newTagger: victim.id, oldTagger: tagger.id });
-        this.broadcast({ type: "frozen", playerId: victim.id, value: true });
+        this.broadcast({type: "infected", newTagger: victim.id, oldTagger: tagger.id});
+        this.broadcast({type: "frozen", playerId: victim.id, value: true});
 
         setTimeout(() => {
             victim.isFrozen = false;
-            this.broadcast({ type: "frozen", playerId: victim.id, value: false });
+            this.broadcast({type: "frozen", playerId: victim.id, value: false});
         }, 7000);
     }
 
     handleItemSpawn(ws, x, y) {
-        const newItem = { x, y };
+        const newItem = {x, y};
         this.items.push(newItem);
-        this.broadcast({ type: "spawnItem", x, y });
-        console.log(`🎁 Item gespawnt bei ${x}, ${y}`);
+        this.broadcast({type: "spawnItem", x, y});
     }
 
     handleItemPickup(ws, x, y) {
         const player = this.players.find(p => p.ws === ws);
         if (!player) return;
 
-        this.items = this.items.filter(item => {
-            const dist = Math.hypot(item.x - x, item.y - y);
-            return dist > 20;
-        });
-
-        this.broadcast({
-            type: "pickupItem",
-            x,
-            y,
-            playerId: player.id
-        });
-        console.log(`🛒 Spieler ${player.id} hat ein Item bei (${x}, ${y}) aufgenommen`);
+        this.items = this.items.filter(item => Math.hypot(item.x - x, item.y - y) > 20);
+        this.broadcast({type: "pickupItem", x, y, playerId: player.id});
     }
 
     handleFreezeOther(ws) {
-        const player = this.players.find(p => p.ws === ws);
         const other = this.players.find(p => p.ws !== ws);
-
         if (other) {
-            other.ws.send(JSON.stringify({
-                type: 'frozen',
-                playerId: other.id,
-                value: true
-            }));
-
+            other.send({type: 'frozen', playerId: other.id, value: true});
             setTimeout(() => {
                 if (other.ws.readyState === 1) {
-                    other.ws.send(JSON.stringify({
-                        type: 'frozen',
-                        playerId: other.id,
-                        value: false
-                    }));
+                    other.send({type: 'frozen', playerId: other.id, value: false});
                 }
             }, 4000);
         }
     }
 
-    // ✨ NEU: Unsichtbarkeit korrekt verteilen
     handleSetInvisible(ws, value) {
         const player = this.players.find(p => p.ws === ws);
         if (!player) return;
 
-        this.broadcast({
-            type: 'setInvisible',
-            playerId: player.id,
-            value: value
-        });
+        this.broadcast({type: 'setInvisible', playerId: player.id, value});
     }
 }
 
