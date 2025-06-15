@@ -38,6 +38,10 @@ wss.on('connection', (ws) => {
                 case 'setInvisible':
                     room.handleSetInvisible(ws, data.value);
                     break;
+                case "itemSpots":
+                    room.handleItemSpots(ws, data.spots);
+                    break;
+
                 case 'ping':
                     console.log('📶 Ping erhalten von Client');
                     room.updatePing(ws);

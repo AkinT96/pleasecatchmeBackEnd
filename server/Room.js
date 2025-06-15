@@ -1,4 +1,5 @@
 const Player = require('./Player');
+const itemSpots = require('./itemspots.json');
 
 class Room {
     constructor(roomManager) {
@@ -14,6 +15,8 @@ class Room {
         this.lastPing = new Map();
         this.items = [];
         this.ended = false;
+        this.receivedItemSpots = [];
+
 
     }
 
@@ -85,20 +88,32 @@ class Room {
             player.send({type: 'start', players: playerData});
         }
 
-        // 🆕 Direkt ein erstes Item zur Kontrolle erzeugen
-        this.handleItemSpawn(null, 256, 256);
+        // zufälligen Spot aus itemSpots wählen
+        const randomSpot = itemSpots[Math.floor(Math.random() * itemSpots.length)];
+        this.handleItemSpawn(null, randomSpot.x, randomSpot.y);
+        if (this.receivedItemSpots.length > 0) {
+            const spot = this.receivedItemSpots[Math.floor(Math.random() * this.receivedItemSpots.length)];
+            this.handleItemSpawn(null, spot.x, spot.y);
+        }
 
-        // 🆕 Alle 10 Sekunden ein neues Item spawnen (max. 5 gleichzeitig)
+
         this.itemInterval = setInterval(() => {
             if (!this.started) return;
-            if (this.items.length >= 5) return;
+            if (this.items.length >= 10) return;
 
-            const x = Math.floor(Math.random() * 500) + 100;
-            const y = Math.floor(Math.random() * 400) + 100;
+            const spot = this.receivedItemSpots[Math.floor(Math.random() * this.receivedItemSpots.length)];
+            this.handleItemSpawn(null, spot.x, spot.y);
+        }, 8000);
 
-            this.handleItemSpawn(null, x, y);
-        }, 10000);
+
     }
+
+    handleItemSpots(ws, spotsArray) {
+        if (!Array.isArray(spotsArray)) return;
+        this.receivedItemSpots = spotsArray;
+        console.log("📍 ItemSpots vom Client übernommen:", spotsArray.length);
+    }
+
 
     startRoundTimer() {
         const startTime = Date.now();
@@ -223,6 +238,7 @@ class Room {
         this.items = this.items.filter(item => Math.hypot(item.x - x, item.y - y) > 20);
         this.broadcast({type: "pickupItem", x, y, playerId: player.id});
     }
+
 
     handleFreezeOther(ws) {
         const other = this.players.find(p => p.ws !== ws);
